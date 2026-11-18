@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>臺中市全方位智慧大眾運輸即時看板</title>
+    <!-- 引入 Tailwind CSS 確保跨平台排版穩定 -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- 引入 FontAwesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-bus: #3b82f6;
+            --accent-mrt: #10b981;
+            --accent-thsr: #f59e0b;
+            --accent-bike: #84cc16;
+            --accent-park: #ec4899;
+        }
+        body.light-mode {
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-color: #0f172a;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: system-ui, -apple-system, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .card-custom {
+            background-color: var(--card-bg);
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        /* 電視盒與無障礙焦點框 */
+        button:focus, select:focus, input:focus {
+            outline: 4px solid #facc15 !important;
+            outline-offset: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-6">
+
+    <!-- 頂部導覽列：時間、標題與無障礙設定 -->
+    <header class="flex flex-col md:flex-row justify-between items-center mb-6 pb-4 border-b border-gray-700">
+        <div class="flex items-center space-x-4 mb-4 md:mb-0">
+            <div class="bg-blue-600 p-3 rounded-2xl text-white text-2xl">
+                <i class="fa-solid fa-city"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-black tracking-wider">臺中市大眾運輸即時數據看板</h1>
+                <p class="text-sm opacity-85">TDX 運輸資料流通服務串接 | 跨平台無障礙版本</p>
+            </div>
+        </div>
+
+        <!-- 系統時鐘與輔助控制項 -->
+        <div class="flex items-center space-x-4">
+            <div id="live-clock" class="text-xl md:text-2xl font-mono font-bold bg-gray-800 px-4 py-2 rounded-xl text-yellow-400 border border-gray-700">
+                載入時間中...
+            </div>
+            <button onclick="toggleTheme()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center space-x-2" title="切換高對比色彩">
+                <i class="fa-solid fa-circle-half-stroke"></i>
+                <span class="hidden sm:inline">配色模式</span>
+            </button>
+            <button onclick="speakDashboard()" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-xl text-sm font-bold flex items-center space-x-2" title="語音朗讀摘要">
+                <i class="fa-solid fa-volume-high"></i>
+                <span class="hidden sm:inline">語音播報</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主網格內容：多運具看板 -->
+    <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- 1. 臺中市公車專區 -->
+        <section class="card-custom p-5 border-t-4 border-blue-500 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold flex items-center space-x-2">
+                        <i class="fa-solid fa-bus text-blue-500"></i>
+                        <span>市區公車動態</span>
+                    </h2>
+                    <span class="text-xs bg-blue-900 text-blue-200 px-2.5 py-1 rounded-full font-semibold">即時更新</span>
+                </div>
+                <div class="space-y-3" id="bus-list">
+                    <!-- 動態載入公車預估時間 -->
+                    <div class="p-3 bg-gray-800 rounded-lg animate-pulse text-sm">正在向 TDX 請求公車資料...</div>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-gray-700 text-xs opacity-75 flex justify-between">
+                <span>資料來源：TDX 公車API</span>
+                <span class="text-blue-400 font-semibold">低地板車輛優先</span>
+            </div>
+        </section>
+
+        <!-- 2. 臺中捷運綠線專區 -->
+        <section class="card-custom p-5 border-t-4 border-emerald-500 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold flex items-center space-x-2">
+                        <i class="fa-solid fa-train-subway text-emerald-500"></i>
+                        <span>臺中捷運綠線</span>
+                    </h2>
+                    <span class="text-xs bg-emerald-900 text-emerald-200 px-2.5 py-1 rounded-full font-semibold">高鐵台中站</span>
+                </div>
+                <div class="space-y-3" id="mrt-list">
+                    <div class="p-3 bg-gray-800 rounded-lg animate-pulse text-sm">正在向 TDX 請求捷運資料...</div>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-gray-700 text-xs opacity-75 flex justify-between">
+                <span>資料來源：TDX 捷運API</span>
+                <span class="text-emerald-400 font-semibold">無障礙電梯運作中</span>
+            </div>
+        </section>
+
+        <!-- 3. 臺鐵與高鐵動態 -->
+        <section class="card-custom p-5 border-t-4 border-amber-500 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold flex items-center space-x-2">
+                        <i class="fa-solid fa-train text-amber-500"></i>
+                        <span>台鐵 / 高鐵時刻</span>
+                    </h2>
+                    <span class="text-xs bg-amber-900 text-amber-200 px-2.5 py-1 rounded-full font-semibold">臺中/烏日站</span>
+                </div>
+                <div class="space-y-3" id="rail-list">
+                    <div class="p-3 bg-gray-800 rounded-lg animate-pulse text-sm">正在向 TDX 請求鐵道資料...</div>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-gray-700 text-xs opacity-75 flex justify-between">
+                <span>資料來源：TDX 鐵道API</span>
+                <span class="text-amber-400 font-semibold">友善對號座車廂</span>
+            </div>
+        </section>
+
+        <!-- 4. YouBike 2.0 公共自行車 -->
+        <section class="card-custom p-5 border-t-4 border-lime-500 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold flex items-center space-x-2">
+                        <i class="fa-solid fa-bicycle text-lime-500"></i>
+                        <span>YouBike 2.0 車位</span>
+                    </h2>
+                    <span class="text-xs bg-lime-900 text-lime-200 px-2.5 py-1 rounded-full font-semibold">熱門站點</span>
+                </div>
+                <div class="space-y-3" id="bike-list">
+                    <div class="p-3 bg-gray-800 rounded-lg animate-pulse text-sm">正在向 TDX 請求 YouBike 資料...</div>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-gray-700 text-xs opacity-75 flex justify-between">
+                <span>資料來源：TDX 自行車API</span>
+                <span class="text-lime-400 font-semibold">含電輔車與親子車位</span>
+            </div>
+        </section>
+
+        <!-- 5. 停車場即時車位 -->
+        <section class="card-custom p-5 border-t-4 border-pink-500 flex flex-col justify-between md:col-span-2 lg:col-span-2">
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold flex items-center space-x-2">
+                        <i class="fa-solid fa-square-parking text-pink-500"></i>
+                        <span>重點停車場剩餘車位</span>
+                    </h2>
+                    <span class="text-xs bg-pink-900 text-pink-200 px-2.5 py-1 rounded-full font-semibold">即時剩餘車位</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="parking-list">
+                    <div class="p-3 bg-gray-800 rounded-lg animate-pulse text-sm">正在向 TDX 請求停車場資料...</div>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-gray-700 text-xs opacity-75 flex justify-between">
+                <span>資料來源：TDX 停車場API</span>
+                <span class="text-pink-400 font-semibold">提供身心障礙專用車位數</span>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 頁尾說明 -->
+    <footer class="mt-8 text-center text-xs opacity-60">
+        <p>本看板符合身心障礙友善與全齡視覺標準，支援電視盒遙控器選單操作與語音輔助。</p>
+        <p class="mt-1">© 2026 臺中市智慧大眾運輸數據中心 | 數據由交通部 TDX 平臺提供</p>
+    </footer>
+
+    <!-- JavaScript 邏輯：時間、API 串接範例與無障礙互動 -->
+    <script>
+        // 即時時鐘
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').innerText = now.toLocaleTimeString('zh-TW', { hour12: false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 色彩模式切換
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+        }
+
+        // 語音播報功能 (Web Speech API - 無障礙友善)
+        function speakDashboard() {
+            if (!('speechSynthesis' in window)) {
+                alert('您的瀏覽器不支援語音播報功能。');
+                return;
+            }
+            const text = "這是臺中市大眾運輸即時看板。目前公車、捷運、高鐵、台鐵與YouBike運行順暢，各站點無障礙設施正常運作。";
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-TW';
+            window.speechSynthesis.speak(utterance);
+        }
+
+        /* 
+          【TDX API 串接提示】
+          正式上線時，請先至 TDX 官網 (https://tdx.transportdata.tw/) 註冊帳號並取得 Client ID 與 Client Secret。
+          透過後端（或前端 Token機制）取得 Bearer Token 後帶入 Header。
+          以下為模擬前端非同步載入 TDX 資料（開發者可直接替換為實際 Fetch 邏輯）：
+        */
+        async function fetchTDXData() {
+            try {
+                // 模擬公車資料更新
+                document.getElementById('bus-list').innerHTML = `
+                    <div class="p-3 bg-gray-800 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-lg text-blue-400">300路</span> 
+                            <span class="text-xs opacity-80 block">靜宜大學 -> 臺中車站 (低地板)</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xl font-black text-yellow-400">2 分鐘</span>
+                            <span class="text-xs block text-green-400">即將進站</span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-gray-800 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-lg text-blue-400">73路</span> 
+                            <span class="text-xs opacity-80 block">大慶車站 -> 統聯轉運站</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xl font-black">7 分鐘</span>
+                        </div>
+                    </div>
+                `;
+
+                // 模擬中捷資料更新
+                document.getElementById('mrt-list').innerHTML = `
+                    <div class="p-3 bg-gray-800 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-emerald-400">往北屯總站</span>
+                            <span class="text-xs opacity-80 block">高鐵台中站 (1號月台)</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xl font-black text-yellow-400">進站中</span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-gray-800 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-emerald-400">往北屯總站</span>
+                            <span class="text-xs opacity-80 block">高鐵台中站 (1號月台)</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xl font-black">5 分鐘</span>
+                        </div>
+                    </div>
+                `;
+
+                // 模擬台鐵/高鐵資料
+                document.getElementById('rail-list').innerHTML = `
+                    <div class="p-3 bg-gray-800 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-amber-400">高鐵 0828次</span>
+                            <span class="text-xs opacity-80 block">往 南港 (自由座/無障礙車廂)</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xl font-black">12:15</span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-gray-800 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-amber-400">台鐵 122次 自強號</span>
+                            <span class="text-xs opacity-80 block">往 樹林／基隆</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xl font-black">12:22</span>
+                        </div>
+                    </div>
+                `;
+
+                // 模擬 YouBike 2.0 資料
+                document.getElementById('bike-list').innerHTML = `
+                    <div class="p-3 bg-gray-800 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-lime-400">捷運高鐵台中站(1號出口)</span>
+                            <span class="text-xs opacity-80 block">YouBike 2.0</span>
+                        </div>
+                        <div class="text-right text-sm">
+                            <span class="bg-lime-900 text-lime-200 px-2 py-0.5 rounded font-bold">可借: 15</span>
+                            <span class="bg-gray-700 px-2 py-0.5 rounded font-bold ml-1">可停: 8</span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-gray-800 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-lime-400">臺中火車站(東站)</span>
+                            <span class="text-xs opacity-80 block">YouBike 2.0</span>
+                        </div>
+                        <div class="text-right text-sm">
+                            <span class="bg-lime-900 text-lime-200 px-2 py-0.5 rounded font-bold">可借: 4</span>
+                            <span class="bg-gray-700 px-2 py-0.5 rounded font-bold ml-1">可停: 12</span>
+                        </div>
+                    </div>
+                `;
+
+                // 模擬停車場資料
+                document.getElementById('parking-list').innerHTML = `
+                    <div class="p-3 bg-gray-800 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-pink-400">臺中市政府停車場</span>
+                            <span class="text-xs opacity-80 block">小型車 / 殘障車位</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-lg font-black text-pink-300">剩餘 42 位</span>
+                            <span class="text-xs block text-gray-400">身障車位: 3</span>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-gray-800 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-pink-400">中山堂地下停車場</span>
+                            <span class="text-xs opacity-80 block">路外公共停車場</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-lg font-black text-yellow-400">剩餘 8 位</span>
+                            <span class="text-xs block text-gray-400">身障車位: 1</span>
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error("獲取 TDX 資料失敗", error);
+            }
+        }
+
+        // 頁面載入後執行，並設定每 30 秒自動更新一次以確保即時性
+        fetchTDXData();
+        setInterval(fetchTDXData, 30000);
+    </script>
+</body>
+</html>
